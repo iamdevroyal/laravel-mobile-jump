@@ -23,11 +23,11 @@ class RedisSessionStore implements SessionStoreInterface
         $key  = self::KEY_PREFIX . $session->sessionId;
         $data = $session->toArray();
 
-        $pipe = $this->redis()->pipeline();
-        $pipe->hmset($key, $data);
-        $pipe->expire($key, $ttlSeconds);
-        $pipe->sadd(self::INDEX_KEY, $session->sessionId);
-        $pipe->execute();
+        $this->redis()->pipeline(function ($pipe) use ($key, $data, $ttlSeconds, $session) {
+            $pipe->hmset($key, $data);
+            $pipe->expire($key, $ttlSeconds);
+            $pipe->sadd(self::INDEX_KEY, $session->sessionId);
+        });
     }
 
     public function get(string $sessionId): ?MobileSession
