@@ -18,30 +18,27 @@ class MobileJumpInstallCommand extends Command
         $this->newLine();
 
         // ── 1. Publish config ──────────────────────────────────────────────
-        $this->task('Publishing config file', function () {
-            $this->callSilent('vendor:publish', [
-                '--tag'   => 'mobile-jump-config',
-                '--force' => false,
-            ]);
-        });
+        $this->info('  ✓ Publishing config file...');
+        $this->callSilent('vendor:publish', [
+            '--tag'   => 'mobile-jump-config',
+            '--force' => false,
+        ]);
 
         // ── 2. Publish APK ────────────────────────────────────────────────
-        $this->task('Publishing Android APK to public/vendor/mobile-jump/', function () {
-            $this->callSilent('vendor:publish', [
-                '--tag'   => 'mobile-jump-android',
-                '--force' => false,
-            ]);
-        });
+        $this->info('  ✓ Publishing Android APK to public/vendor/mobile-jump/...');
+        $this->callSilent('vendor:publish', [
+            '--tag'   => 'mobile-jump-android',
+            '--force' => false,
+        ]);
 
         // ── 3. Optionally publish migration ───────────────────────────────
         $driver = config('mobile-jump.storage', 'redis');
         if ($driver === 'database') {
-            $this->task('Publishing database migration', function () {
-                $this->callSilent('vendor:publish', [
-                    '--tag'   => 'mobile-jump-migrations',
-                    '--force' => false,
-                ]);
-            });
+            $this->info('  ✓ Publishing database migration...');
+            $this->callSilent('vendor:publish', [
+                '--tag'   => 'mobile-jump-migrations',
+                '--force' => false,
+            ]);
             $this->info('  Run <fg=cyan>php artisan migrate</> to create the sessions table.');
             $this->newLine();
         }
