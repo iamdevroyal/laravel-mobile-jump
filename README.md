@@ -4,7 +4,7 @@
 [![Total Downloads](https://img.shields.io/packagist/dt/iamdevroyal/laravel-mobile-jump.svg?style=flat-square)](https://packagist.org/packages/iamdevroyal/laravel-mobile-jump)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
 [![PHP Version](https://img.shields.io/badge/PHP-8.2%2B-blue.svg?style=flat-square)](https://php.net)
-[![Laravel](https://img.shields.io/badge/Laravel-11%2F12-red.svg?style=flat-square)](https://laravel.com)
+[![Laravel](https://img.shields.io/badge/Laravel-11%2F12%2F13-red.svg?style=flat-square)](https://laravel.com)
 
 > **Scan a QR code. See your Laravel app on your phone. Instantly.**
 
@@ -33,9 +33,10 @@ No tunnelling services. No internet required. No configuration headaches.
 ## 📋 Requirements
 
 - **PHP** 8.2+
-- **Laravel** 11.x or 12.x
+- **Laravel** 11.x, 12.x, or 13.x
 - **Android phone** on the same Wi-Fi network as your laptop
 - **One of**: Redis (recommended), MySQL/SQLite, or a writable filesystem
+- **Vite** (Vue/React frontend) configured to listen on `0.0.0.0` — see [Frontend Setup](#-frontend-setup-required)
 
 ---
 
@@ -60,6 +61,7 @@ The wizard will:
 - ✅ Copy the companion Android APK to `public/vendor/mobile-jump/MobileJump.apk`
 - ✅ Check your configured storage backend (Redis / Database / File)
 - ✅ Optionally scaffold a Vue 3 or React frontend stub
+- ✅ **Automatically patch** your `package.json` dev script and `vite.config.js` to bind to `0.0.0.0`
 
 ### Step 3 — (Optional) Database Migration
 
@@ -72,19 +74,96 @@ php artisan migrate
 
 ---
 
+## 🛠 Frontend Setup (Required)
+
+Mobile Jump needs your **Vite dev server** to listen on all network interfaces so your Android device can reach it over Wi-Fi.
+
+> **Note:** The install wizard (`php artisan mobile:jump:install`) attempts to do this automatically. Only follow these manual steps if you skipped the wizard or see `Frontend not reachable` warnings.
+
+### Vue 3 / Vite
+
+**Option A — vite.config.js (recommended):**
+
+Add a `server` block to your `vite.config.js`:
+
+```js
+// vite.config.js
+export default defineConfig({
+  // ... your existing config
+  server: {
+    host: '0.0.0.0',
+    port: 5173,
+  },
+})
+```
+
+Then simply run:
+
+```bash
+npm run dev
+```
+
+**Option B — package.json dev script:**
+
+Update your `package.json` to include `--host`:
+
+```json
+{
+  "scripts": {
+    "dev": "vite --host"
+  }
+}
+```
+
+> ⚠️ **PowerShell users:** Do NOT use `npm run dev -- --host 0.0.0.0`. PowerShell passes `0.0.0.0` as a positional argument (root directory) rather than a `--host` value. Use one of the options above instead.
+
+### React / Vite
+
+Same as Vue — add `server.host: '0.0.0.0'` to your `vite.config.js`:
+
+```js
+// vite.config.js
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    host: '0.0.0.0',
+    port: 5173,
+  },
+})
+```
+
+### Next.js (React)
+
+Next.js uses its own server. Run it with:
+
+```bash
+npx next dev --hostname 0.0.0.0
+# or set it in next.config.js via experimental.serverComponentsExternalPackages
+```
+
+Then set `MOBILE_JUMP_FRONTEND_PORT=3000` in your `.env`.
+
+---
+
 ## 🎯 Usage
 
 ### Start a Development Session
 
 ```bash
-# Ensure your servers accept connections from all interfaces:
+# 1. Start Laravel API on all interfaces:
 php artisan serve --host=0.0.0.0
-npm run dev -- --host 0.0.0.0    # Vite
-# or: npm run dev -- --host       # some setups use this shorthand
 
-# Start Mobile Jump:
+# 2. Start your Vite frontend (--host baked in via install wizard or vite.config.js):
+npm run dev
+
+# 3. Start Mobile Jump:
 php artisan mobile:jump
 ```
+
+> **Requires Vite configured for `host: '0.0.0.0'`** — see [Frontend Setup](#-frontend-setup-required) above.
 
 A compact QR code renders in your terminal. You'll see something like:
 
