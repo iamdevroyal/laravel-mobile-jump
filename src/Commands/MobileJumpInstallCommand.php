@@ -58,10 +58,13 @@ class MobileJumpInstallCommand extends Command
             $this->publishFrontendStubs($framework);
         }
 
-        // ── 6. Patch Vite config so dev server binds to all interfaces ───
+        // ── 6. Patch Vite config ──────────────────────────────────────────
         $this->patchViteConfig($framework);
 
-        // ── 7. Summary ────────────────────────────────────────────────────
+        // ── 7. Print dynamic network URL guidance ─────────────────────────
+        $this->printNetworkGuidance();
+
+        // ── 8. Summary ────────────────────────────────────────────────────
         $this->newLine();
         $this->line('  <fg=green;options=bold>✓ Mobile Jump is ready!</>');
         $this->newLine();
@@ -117,7 +120,6 @@ class MobileJumpInstallCommand extends Command
             $pkg = json_decode(file_get_contents($pkgPath), true);
             $devScript = $pkg['scripts']['dev'] ?? 'vite';
 
-            // Only add --host if not already present
             if (str_contains($devScript, 'vite') && ! str_contains($devScript, '--host')) {
                 $pkg['scripts']['dev'] = rtrim($devScript) . ' --host';
                 file_put_contents($pkgPath, json_encode($pkg, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL);
@@ -136,17 +138,13 @@ class MobileJumpInstallCommand extends Command
 
             $content = file_get_contents($configPath);
 
-            // Check if server.host is already configured
             if (str_contains($content, "host:") && str_contains($content, 'server')) {
                 $this->line("  <fg=gray>{$configFile}</> already has a server host config (skipped)");
                 break;
             }
 
-            // Inject server block before the closing brace of defineConfig return
-            // We inject just before the last closing } }) pattern
             $injection = "\n    server: {\n      host: '0.0.0.0',\n      port: 5173,\n    },";
 
-            // Try to inject before the last `}` in a `return {` block
             $patched = preg_replace(
                 '/(\}\s*\}\s*\)\s*;\?\s*$)/m',
                 $injection . "\n$1",
@@ -165,12 +163,60 @@ class MobileJumpInstallCommand extends Command
             break;
         }
 
-        // ── Vite config patch for React (next.config.js / similar) ───────
         if ($framework === 'react') {
-            $this->line('  <fg=gray>React detected — if using Next.js, Mobile Jump requires a custom server. See README.</>');
+            $this->line('  <fg=gray>React detected — if using Next.js, run: npx next dev --hostname 0.0.0.0</>');
         }
 
         $this->newLine();
+    }
+
+    /**
+     * Print explicit code snippets to prevent "Axios Network Error" on mobile devices
+     * caused by hardcoded 127.0.0.1 / localhost API base URLs.
+     */
+    private function printNetworkGuidance(): void
+    {
+        $this->line('  <fg=yellow;options=bold>⚠️ IMPORTANT: Dynamic API Base URL Setup</>');
+        $this->line('  <fg=gray>To avoid "Network Error" on mobile devices, do not hardcode 127.0.0.1 in your API client.</>');
+        $this->line('  <fg=gray>Copy this helper into your Axios / API client (e.g. src/api/client.js):</>');
+        $this->newLine();
+
+        $snippetApi = <<<'JS'
+  export function getApiBaseUrl() {
+    const envUrl = import.meta.env.VITE_API_URL
+    // Use envUrl directly if it is a production domain (not 127.0.0.1 / localhost)
+    if (envUrl && !envUrl.includes('127.0.0.1') && !envUrl.includes('localhost')) {
+      return envUrl
+    }
+    // Automatically use current IP when accessed over LAN from a mobile device
+    if (typeof window !== 'undefined' && window.location?.hostname) {
+      const host = window.location.hostname
+      if (host !== 'localhost' && host !== '127.0.0.1') {
+        return `http://${host}:8000/api/v1`
+      }
+    }
+    return envUrl || 'http://127.0.0.1:8000/api/v1'
+  }
+JS;
+        foreach (explode("\n", $snippetApi) as $line) {
+            $this->line('  <fg=cyan>' . $line . '</>');
+        }
+
+        $this->newLine();
+        $this->line('  <fg=gray>If using Laravel Reverb / Echo, do the same for wsHost in useReverb.js:</>');
+        $snippetReverb = <<<'JS'
+  const envHost = import.meta.env.VITE_REVERB_HOST
+  let activeHost = envHost || '127.0.0.1'
+  if (typeof window !== 'undefined' && window.location?.hostname) {
+    const host = window.location.hostname
+    if (host !== 'localhost' && host !== '127.0.0.1' && (!envHost || envHost === '127.0.0.1' || envHost === 'localhost')) {
+      activeHost = host
+    }
+  }
+JS;
+        foreach (explode("\n", $snippetReverb) as $line) {
+            $this->line('  <fg=cyan>' . $line . '</>');
+        }
     }
 
     private function publishFrontendStubs(string $framework): void

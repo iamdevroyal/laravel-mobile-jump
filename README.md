@@ -148,6 +148,61 @@ Then set `MOBILE_JUMP_FRONTEND_PORT=3000` in your `.env`.
 
 ---
 
+### ⚡ Avoiding "Axios Network Error" on Mobile Devices
+
+When testing on an Android device via Mobile Jump, your web app loads at `http://<your-lan-ip>:5173`. If your API client hardcodes `http://127.0.0.1:8000` or reads a `.env` file containing `VITE_API_URL=http://127.0.0.1:8000`, the mobile device will try to send API requests to `127.0.0.1:8000` (which points to the phone itself), causing an **Axios Network Error**.
+
+#### Solution 1 — Dynamic API Base URL Helper
+
+In your primary API client file (e.g. `src/api/client.js`):
+
+```js
+import axios from 'axios'
+
+export function getApiBaseUrl() {
+  const envUrl = import.meta.env.VITE_API_URL
+  // Use production domain directly if configured
+  if (envUrl && !envUrl.includes('127.0.0.1') && !envUrl.includes('localhost')) {
+    return envUrl
+  }
+  // Automatically use current LAN IP when accessed over Wi-Fi from a mobile device
+  if (typeof window !== 'undefined' && window.location?.hostname) {
+    const host = window.location.hostname
+    if (host !== 'localhost' && host !== '127.0.0.1') {
+      return `http://${host}:8000/api/v1`
+    }
+  }
+  return envUrl || 'http://127.0.0.1:8000/api/v1'
+}
+
+const client = axios.create({
+  baseURL: getApiBaseUrl(),
+})
+```
+
+#### Solution 2 — Dynamic Reverb / WebSockets Host
+
+In your Echo / Reverb composable (e.g. `src/composables/useReverb.js`):
+
+```js
+const envHost = import.meta.env.VITE_REVERB_HOST
+let activeHost = envHost || '127.0.0.1'
+if (typeof window !== 'undefined' && window.location?.hostname) {
+  const host = window.location.hostname
+  if (host !== 'localhost' && host !== '127.0.0.1' && (!envHost || envHost === '127.0.0.1' || envHost === 'localhost')) {
+    activeHost = host
+  }
+}
+
+const echo = new Echo({
+  broadcaster: 'reverb',
+  wsHost: activeHost,
+  // ...
+})
+```
+
+---
+
 ## 🎯 Usage
 
 ### Start a Development Session
