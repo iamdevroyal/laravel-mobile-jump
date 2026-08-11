@@ -1,0 +1,43 @@
+{
+  "name": "iamdevroyal/laravel-mobile-jump",
+  "description": "Scan a QR code to instantly preview your Laravel app on any Android phone over local Wi-Fi",
+  "type": "library",
+  "keywords": ["laravel", "mobile", "dev-tools", "qr", "android", "preview"],
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "iamdevroyal",
+      "homepage": "https://github.com/iamdevroyal"
+    }
+  ],
+  "require": {
+    "php": "^8.2",
+    "laravel/framework": "^11.0|^12.0",
+    "bacon/bacon-qr-code": "^3.0"
+  },
+  "require-dev": {
+    "orchestra/testbench": "^9.0|^10.0",
+    "phpunit/phpunit": "^11.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "Iamdevroyal\\MobileJump\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Iamdevroyal\\MobileJump\\Tests\\": "tests/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Iamdevroyal\\MobileJump\\MobileJumpServiceProvider"
+      ]
+    }
+  },
+  "config": {
+    "sort-packages": true
+  },
+  "minimum-stability": "stable"
+}
