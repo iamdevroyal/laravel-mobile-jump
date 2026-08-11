@@ -424,3 +424,11 @@ MIT — see [LICENSE](LICENSE).
 Built by [iamdevroyal](https://github.com/iamdevroyal).
 
 Inspired by the need to preview complex Laravel + Vue apps on real Android devices during development — without the overhead of cloud tunnels, staging environments, or APK rebuilds.
+
+---
+
+## u{1F4F1} Android App Repository
+
+The companion Android app source code lives in its own repository:
+
+**[iamdevroyal/android-mobile-jump](https://github.com/iamdevroyal/android-mobile-jump)**
